@@ -187,3 +187,92 @@ export const login = async (req, res) => {
         });
     }
 };
+
+export const updateProfile = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { id } = req.params;
+        const { fullName, phoneNumber, address, birthDate } = req.body;
+
+        // Kiểm tra user tồn tại
+        const user = await User.findByPk(id);
+        if (!user) {
+            await transaction.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Kiểm tra quyền update (user chỉ được update thông tin của chính mình)
+        if (user.id !== req.user.userId) {
+            await transaction.rollback();
+            return res.status(403).json({
+                success: false,
+                message: 'You do not have permission to update this profile'
+            });
+        }
+
+        // Validate và chuẩn bị data update
+        const updateData = {
+            ...(fullName && { fullName: fullName.trim() }),
+            ...(phoneNumber && { phoneNumber: phoneNumber.trim() }),
+            ...(address && { address: address.trim() }),
+            ...(birthDate && { birthDate }),
+            updatedAt: new Date()
+        };
+
+        // Update user
+        await User.update(updateData, {
+            where: { id },
+            transaction
+        });
+
+        // Lấy thông tin user sau khi update
+        const updatedUser = await User.findOne({
+            where: { id },
+            include: [{
+                model: Account,
+                as: 'Account',
+                attributes: ['email']
+            }],
+            transaction
+        });
+
+        await transaction.commit();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: {
+                id: updatedUser.id,
+                email: updatedUser.Account.email,
+                fullName: updatedUser.fullName,
+                phoneNumber: updatedUser.phoneNumber,
+                address: updatedUser.address,
+                birthDate: updatedUser.birthDate
+            }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        console.error('Update profile error:', error);
+
+        if (error.name === 'SequelizeValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: error.errors.map(err => ({
+                    field: err.path,
+                    message: err.message
+                }))
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Update profile failed',
+            error: 'Internal server error'
+        });
+    }
+};
