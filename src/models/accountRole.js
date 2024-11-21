@@ -17,7 +17,7 @@ const AccountRole = sequelize.define('AccountRole', {
     },
   },
 }, {
-  tableName: 'Account_Roles',
+  tableName: 'AccountRoles',
   timestamps: false,
 });
 

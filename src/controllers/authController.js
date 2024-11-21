@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import sequelize from '../configs/connectDB.js';  
-import { User, Account } from '../models/index.js';
+import { User, Account, Role } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -116,75 +116,60 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
-
-        // Validate required fields
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email and password are required'
-            });
-        }
-        
-        // Find account and join with user
-        const account = await Account.findOne({ 
-            where: { email: email.toLowerCase().trim() },
+        const account = await Account.findOne({
+            where: { email: req.body.email },
             include: [{
                 model: User,
-                as: 'User',  // Must match the alias in association
-                attributes: ['id', 'fullName', 'phoneNumber', 'address', 'role'] // Include role
+                as: 'User',
+                attributes: ['id', 'fullName', 'phoneNumber', 'address']
+            }, {
+                model: Role,
+                as: 'Roles',
+                through: { attributes: [] },
+                attributes: ['id', 'name']
             }]
         });
-        
+
         if (!account) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Invalid email or password' 
+            return res.status(404).json({
+                message: 'Tài khoản không tồn tại'
             });
         }
 
-        // Check password
-        const isValidPassword = await bcrypt.compare(password, account.password);
-
+        const isValidPassword = await bcrypt.compare(req.body.password, account.password);
         if (!isValidPassword) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Invalid email or password' 
+            return res.status(401).json({
+                message: 'Mật khẩu không chính xác'
             });
         }
 
         // Create JWT token
         const token = jwt.sign(
             { 
-                userId: account.userId,
                 email: account.email,
-                role: account.User.role // Include role in token payload if needed
+                userId: account.userId,
+                roles: account.Roles.map(role => role.name)
             },
-            process.env.JWT_SECRET || '21h',
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        return res.status(200).json({
-            success: true,
-            message: 'Login successful',
-            data: {
-                token,
-                user: {
-                    id: account.userId,
-                    email: account.email,
-                    fullName: account.User.fullName,
-                    phoneNumber: account.User.phoneNumber,
-                    address: account.User.address,
-                    role: account.User.role // Include role in response
-                }
+        res.json({
+            message: 'Đăng nhập thành công',
+            token,
+            user: {
+                email: account.email,
+                fullName: account.User.fullName,
+                phoneNumber: account.User.phoneNumber,
+                address: account.User.address,
+                roles: account.Roles.map(role => role.name)
             }
         });
 
     } catch (error) {
         console.error('Login error:', error);
-        return res.status(500).json({
-            success: false, 
-            message: 'Login failed',
+        res.status(500).json({
+            message: 'Đã xảy ra lỗi khi đăng nhập',
             error: error.message
         });
     }
