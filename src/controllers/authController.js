@@ -126,13 +126,13 @@ export const login = async (req, res) => {
             });
         }
         
-        // Tìm account và join với user
+        // Find account and join with user
         const account = await Account.findOne({ 
             where: { email: email.toLowerCase().trim() },
             include: [{
                 model: User,
-                as: 'User',  // Phải match với tên alias trong association
-                attributes: ['id', 'fullName', 'phoneNumber', 'address']
+                as: 'User',  // Must match the alias in association
+                attributes: ['id', 'fullName', 'phoneNumber', 'address', 'role'] // Include role
             }]
         });
         
@@ -143,7 +143,7 @@ export const login = async (req, res) => {
             });
         }
 
-        // Kiểm tra password
+        // Check password
         const isValidPassword = await bcrypt.compare(password, account.password);
 
         if (!isValidPassword) {
@@ -153,11 +153,12 @@ export const login = async (req, res) => {
             });
         }
 
-        // Tạo JWT token
+        // Create JWT token
         const token = jwt.sign(
             { 
                 userId: account.userId,
-                email: account.email
+                email: account.email,
+                role: account.User.role // Include role in token payload if needed
             },
             process.env.JWT_SECRET || '21h',
             { expiresIn: '24h' }
@@ -173,7 +174,8 @@ export const login = async (req, res) => {
                     email: account.email,
                     fullName: account.User.fullName,
                     phoneNumber: account.User.phoneNumber,
-                    address: account.User.address
+                    address: account.User.address,
+                    role: account.User.role // Include role in response
                 }
             }
         });
@@ -181,7 +183,7 @@ export const login = async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         return res.status(500).json({
-            success: false,
+            success: false, 
             message: 'Login failed',
             error: error.message
         });

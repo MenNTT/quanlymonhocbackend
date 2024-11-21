@@ -1,4 +1,6 @@
 import Course  from '../models/course.js';
+import { Op } from 'sequelize';
+import moment from 'moment';
 
 export const getAllCourses = async (req, res) => {
   try {
@@ -75,6 +77,32 @@ export const updateCourse = async (req, res) => {
     return res.status(404).json({ message: 'Course not found' });
   } catch (error) {
     console.error('Error updating course:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+export const getTotalRevenue = async (req, res) => {
+  try {
+    const totalRevenue = await Course.sum('feeAmount');
+    res.status(200).json({ totalRevenue });
+  } catch (error) {
+    console.error('Error fetching total revenue:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+export const getRecentCourses = async (req, res) => {
+  try {
+    const recentCourses = await Course.findAll({
+      where: {
+        createdAt: {
+          [Op.gte]: moment().subtract(30, 'days').toDate(),
+        },
+      },
+    });
+    res.status(200).json(recentCourses);
+  } catch (error) {
+    console.error('Error fetching recent courses:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

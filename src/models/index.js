@@ -1,7 +1,7 @@
 import Account from './account.js';
 import User from './user.js';
 
-// Thiết lập relationships
+// Set up relationships
 Account.belongsTo(User, {
     foreignKey: 'userId',
     as: 'User'

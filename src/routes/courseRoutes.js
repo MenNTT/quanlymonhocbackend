@@ -9,6 +9,10 @@ const initCourseRoute = (app) => {
     router.post('/course/create', CourseController.createCourse);
     router.delete('/course/delete/:id', CourseController.deleteCourse);
     router.put('/course/update', CourseController.updateCourse);
+    
+    // New routes for total revenue and recent courses
+    router.get('/course/revenue', CourseController.getTotalRevenue);
+    router.get('/course/recent', CourseController.getRecentCourses);
 
     return app.use('/api/v1/', router);
 };
