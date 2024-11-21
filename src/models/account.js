@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../configs/connectDB.js';
 
-const Account = sequelize.define('account', {
+const Account = sequelize.define('Account', {
   email: {
     type: DataTypes.STRING,
     primaryKey: true,
@@ -20,7 +20,7 @@ const Account = sequelize.define('account', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users', // Name of the table the foreign key refers to
+      model: 'User',
       key: 'id',
     },
     comment: 'Foreign key referencing User',
@@ -32,7 +32,7 @@ const Account = sequelize.define('account', {
   },
 }, {
   tableName: 'Accounts',
-  timestamps: false, // Disable Sequelize's automatic timestamp fields
+  timestamps: false,
   comment: 'Table to store account information',
 });
 

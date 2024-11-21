@@ -4,6 +4,7 @@ import sequelize from '../configs/connectDB.js';
 const AccountRole = sequelize.define('AccountRole', {
   accountId: {
     type: DataTypes.STRING,
+    primaryKey: true,
     references: {
       model: 'Accounts',
       key: 'email',
@@ -11,6 +12,7 @@ const AccountRole = sequelize.define('AccountRole', {
   },
   roleId: {
     type: DataTypes.UUID,
+    primaryKey: true,
     references: {
       model: 'Roles',
       key: 'id',

@@ -1,22 +1,25 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../configs/connectDB.js'; 
+import sequelize from '../configs/connectDB.js';
+
 const RolePermission = sequelize.define('RolePermission', {
   roleId: {
     type: DataTypes.UUID,
+    primaryKey: true,
     references: {
       model: 'Roles',
-      key: 'id',
-    },
+      key: 'id'
+    }
   },
   permissionId: {
     type: DataTypes.UUID,
+    primaryKey: true,
     references: {
       model: 'Permissions',
-      key: 'id',
-    },
-  },
+      key: 'id'
+    }
+  }
 }, {
-  tableName: 'Role_Permissions',
+  tableName: 'RolePermissions',
   timestamps: false,
 });
 
