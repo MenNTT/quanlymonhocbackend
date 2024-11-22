@@ -5,11 +5,7 @@ import Permission from './permission.js';
 import RolePermission from './rolePermission.js';
 import AccountRole from './accountRole.js';
 
-<<<<<<< Updated upstream
 // User associations
-=======
-// Set up relationships
->>>>>>> Stashed changes
 Account.belongsTo(User, {
     foreignKey: 'userId',
     as: 'User'
@@ -20,7 +16,6 @@ User.hasOne(Account, {
     as: 'Account'
 });
 
-<<<<<<< Updated upstream
 // Role associations
 Account.belongsToMany(Role, {
     through: AccountRole,
@@ -29,29 +24,14 @@ Account.belongsToMany(Role, {
     as: 'Roles'
 });
 
-=======
->>>>>>> Stashed changes
 Role.belongsToMany(Account, {
     through: AccountRole,
     foreignKey: 'roleId',
     otherKey: 'accountId',
-<<<<<<< Updated upstream
     as: 'Accounts'
 });
 
 // Permission associations
-=======
-    as: 'RoleAccounts'
-});
-
-Account.belongsToMany(Role, {
-    through: AccountRole,
-    foreignKey: 'accountId',
-    otherKey: 'roleId',
-    as: 'AccountRoles'
-});
-
->>>>>>> Stashed changes
 Role.belongsToMany(Permission, {
     through: RolePermission,
     foreignKey: 'roleId',
@@ -73,8 +53,4 @@ export {
     Permission,
     RolePermission,
     AccountRole
-<<<<<<< Updated upstream
-}; 
-=======
 };
->>>>>>> Stashed changes
