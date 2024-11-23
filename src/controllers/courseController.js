@@ -1,4 +1,4 @@
-import Course  from '../models/course.js';
+import Course from '../models/course.js';
 import { Op } from 'sequelize';
 import moment from 'moment';
 
@@ -27,13 +27,14 @@ export const getCourse = async (req, res) => {
 };
 
 export const createCourse = async (req, res) => {
-  const { title, description, teacherId } = req.body;
-  if (!title || !description || !teacherId) {
+  const { name, description, feeAmount, currency, image } = req.body;
+
+  if (!name || !description || !feeAmount) {
     return res.status(400).json({ message: 'Missing required parameters' });
   }
 
   try {
-    const newCourse = await Course.create({ title, description, teacherId });
+    const newCourse = await Course.create({ name, description, feeAmount, currency, image });
     res.status(201).json({ message: 'Course created', course: newCourse });
   } catch (error) {
     console.error('Error creating course:', error);
@@ -60,14 +61,14 @@ export const deleteCourse = async (req, res) => {
 };
 
 export const updateCourse = async (req, res) => {
-  const { id, title, description, teacherId } = req.body;
-  if (!id || !title || !description) {
+  const { id, name, description, feeAmount, currency, image } = req.body;
+  if (!id || !name || !description) {
     return res.status(400).json({ message: 'Missing required parameters' });
   }
 
   try {
     const [updated] = await Course.update(
-      { title, description, teacherId },
+      { name, description, feeAmount, currency, image },
       { where: { id } }
     );
     if (updated) {

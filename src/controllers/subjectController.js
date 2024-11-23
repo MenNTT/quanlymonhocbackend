@@ -25,13 +25,14 @@ export const getSubject = async (req, res) => {
 };
 
 export const createSubject = async (req, res) => {
-  const { title, description } = req.body;
-  if (!title) {
+  const { courseId, name, description, instructorId } = req.body;
+
+  if (!courseId || !name || !instructorId) {
     return res.status(400).json({ message: 'Missing required parameters' });
   }
 
   try {
-    const newSubject = await Subject.create({ title, description });
+    const newSubject = await Subject.create({ courseId, name, description, instructorId });
     res.status(201).json({ message: 'Subject created', subject: newSubject });
   } catch (error) {
     console.error('Error creating subject:', error);
@@ -58,14 +59,15 @@ export const deleteSubject = async (req, res) => {
 };
 
 export const updateSubject = async (req, res) => {
-  const { id, title, description } = req.body;
-  if (!id || !title) {
+  const { id, name, description, instructorId } = req.body;
+
+  if (!id || !name || !instructorId) {
     return res.status(400).json({ message: 'Missing required parameters' });
   }
 
   try {
     const [updated] = await Subject.update(
-      { title, description },
+      { name, description, instructorId },
       { where: { id } }
     );
     if (updated) {
