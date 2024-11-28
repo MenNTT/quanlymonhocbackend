@@ -3,45 +3,25 @@ import sequelize from '../configs/connectDB.js';
 
 const Cart = sequelize.define('Cart', {
   id: {
-    type: DataTypes.UUID,
+    type: DataTypes.INTEGER,
     primaryKey: true,
-    defaultValue: DataTypes.UUIDV4,
+    autoIncrement: true
   },
   userId: {
     type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Users',
-      key: 'id',
-    },
+    allowNull: false
   },
   courseId: {
     type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Courses',
-      key: 'id',
-    },
-  },
-  quantity: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1,
+    allowNull: false
   },
   isWishlist: {
     type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
+    defaultValue: false
+  }
 }, {
-  tableName: 'Cart',
-  timestamps: false,
+  tableName: 'Carts',
+  timestamps: true
 });
 
 export default Cart;

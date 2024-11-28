@@ -1,15 +1,16 @@
 import express from 'express';
-import { addToCart, getCart, removeFromCart } from '../controllers/cartController.js';
+import { addToCart, getCart, removeFromCart } from '../controllers/CartController.js';
+import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Thêm vào giỏ hàng hoặc danh sách yêu thích
-router.post('/cart', addToCart);
+const initCartRoutes = (app) => {
+    // Cart routes
+    router.post('/add', verifyToken, addToCart);
+    router.get('/:userId', verifyToken, getCart);
+    router.delete('/remove/:id', verifyToken, removeFromCart);
 
-// Lấy giỏ hàng hoặc danh sách yêu thích
-router.get('/cart', getCart);
+    return app.use('/api/v1/cart', router);
+};
 
-// Xóa khỏi giỏ hàng hoặc danh sách yêu thích
-router.delete('/cart', removeFromCart);
-
-export default router;
+export default initCartRoutes;

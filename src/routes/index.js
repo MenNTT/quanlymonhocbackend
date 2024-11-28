@@ -14,6 +14,7 @@ import initLessonRoute from "./lessonRoutes.js";
 import initEnrollmentRoute from "./enrollmentRoutes.js";
 import initCourseRoute from "./courseRoutes.js";
 import initAssignmentRoute from "./assignmentRoutes.js";
+import initCartRoute from "./CartRoutes.js";
 
 const initRoutes = (app) => {
     initAuthRoute(app);
@@ -32,6 +33,8 @@ const initRoutes = (app) => {
     initEnrollmentRoute(app);
     initCourseRoute(app);
     initAssignmentRoute(app);
+    initCartRoute(app);
+
 };
 
 export default initRoutes;

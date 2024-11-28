@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import sequelize from '../configs/connectDB.js';  
-import { User, Account, Role } from '../models/index.js';
+import { User, Account, Role, AccountRole } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -116,60 +116,76 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
+        const { email, password } = req.body;
+
+        // Find account with user and roles
         const account = await Account.findOne({
-            where: { email: req.body.email },
-            include: [{
-                model: User,
-                as: 'User',
-                attributes: ['id', 'fullName', 'phoneNumber', 'address']
-            }, {
-                model: Role,
-                as: 'Roles',
-                through: { attributes: [] },
-                attributes: ['id', 'name']
-            }]
+            where: { email },
+            include: [
+                {
+                    model: User,
+                    as: 'User'
+                },
+                {
+                    model: Role,
+                    as: 'Roles',
+                    through: { attributes: [] }
+                }
+            ]
         });
 
         if (!account) {
             return res.status(404).json({
-                message: 'Tài khoản không tồn tại'
+                success: false,
+                message: 'Account not found'
             });
         }
 
-        const isValidPassword = await bcrypt.compare(req.body.password, account.password);
-        if (!isValidPassword) {
+        // Verify password
+        const validPassword = await bcrypt.compare(password, account.password);
+        if (!validPassword) {
             return res.status(401).json({
-                message: 'Mật khẩu không chính xác'
+                success: false,
+                message: 'Invalid password'
             });
         }
+
+        // Get roles safely
+        const roles = account.Roles?.map(role => role.name) || ['user'];
 
         // Create JWT token
         const token = jwt.sign(
             { 
+                userId: account.User.id,
                 email: account.email,
-                userId: account.userId,
-                roles: account.Roles.map(role => role.name)
+                roles: roles 
             },
-            process.env.JWT_SECRET,
+            process.env.JWT_SECRET || '21h',
             { expiresIn: '24h' }
         );
 
-        res.json({
-            message: 'Đăng nhập thành công',
-            token,
-            user: {
-                email: account.email,
-                fullName: account.User.fullName,
-                phoneNumber: account.User.phoneNumber,
-                address: account.User.address,
-                roles: account.Roles.map(role => role.name)
-            }
+        // Prepare user data
+        const userData = {
+            id: account.User.id,
+            email: account.email,
+            fullName: account.User.fullName,
+            phoneNumber: account.User.phoneNumber || null,
+            address: account.User.address || null,
+            roles: roles
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            token: token,
+            user: userData
         });
 
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({
-            message: 'Đã xảy ra lỗi khi đăng nhập',
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
             error: error.message
         });
     }
@@ -181,8 +197,19 @@ export const updateProfile = async (req, res) => {
         const { id } = req.params;
         const { fullName, phoneNumber, address, birthDate } = req.body;
 
+        console.log('Request user from token:', req.user); // Debug log
+        console.log('Params id:', id); // Debug log
+
         // Kiểm tra user tồn tại
-        const user = await User.findByPk(id);
+        const user = await User.findOne({
+            where: { id },
+            include: [{
+                model: Account,
+                as: 'Account',
+                attributes: ['email', 'userId']
+            }]
+        });
+
         if (!user) {
             await transaction.rollback();
             return res.status(404).json({
@@ -191,8 +218,8 @@ export const updateProfile = async (req, res) => {
             });
         }
 
-        // Kiểm tra quyền update (user chỉ được update thông tin của chính mình)
-        if (user.id !== req.user.userId) {
+        // Kiểm tra quyền update - userId trong token phải trùng với id của user
+        if (req.user.userId !== id) {
             await transaction.rollback();
             return res.status(403).json({
                 success: false,
@@ -211,7 +238,7 @@ export const updateProfile = async (req, res) => {
 
         // Update user
         await User.update(updateData, {
-            where: { id },
+            where: { id }, // id chính là userId trong bảng Account
             transaction
         });
 

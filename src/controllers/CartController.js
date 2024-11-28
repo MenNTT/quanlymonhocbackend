@@ -1,31 +1,111 @@
 import Cart from '../models/cart.js';
+import Course from '../models/course.js';
 
-// Thêm khóa học vào giỏ hàng hoặc danh sách yêu thích
-export const addToCart = async (req, res) => {
-  const { userId, courseId, isWishlist } = req.body;
+// Get cart items
+export const getCart = async (req, res) => {
+    const { userId } = req.params;
 
-  if (!userId || !courseId) {
-    return res.status(400).json({ message: 'Missing required parameters' });
-  }
-
-  try {
-    // Kiểm tra xem khóa học đã tồn tại trong giỏ hàng/danh sách yêu thích chưa
-    const existingEntry = await Cart.findOne({
-      where: { userId, courseId, isWishlist },
-    });
-
-    if (existingEntry) {
-      // Nếu đã tồn tại, cập nhật số lượng (nếu cần)
-      existingEntry.quantity += 1;
-      await existingEntry.save();
-      return res.status(200).json({ message: 'Updated quantity', cart: existingEntry });
+    if (!userId) {
+        return res.status(400).json({
+            success: false,
+            message: 'User ID is required'
+        });
     }
 
-    // Nếu chưa tồn tại, thêm mới
-    const newEntry = await Cart.create({ userId, courseId, isWishlist });
-    res.status(201).json({ message: 'Added to cart', cart: newEntry });
-  } catch (error) {
-    console.error('Error adding to cart:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
+    try {
+        const cartItems = await Cart.findAll({
+            where: { 
+                userId,
+                isWishlist: false 
+            },
+            include: [{
+                model: Course,
+                as: 'Course'
+            }]
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: cartItems
+        });
+    } catch (error) {
+        console.error('Error fetching cart:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        });
+    }
+};
+
+// Add to cart
+export const addToCart = async (req, res) => {
+    const { userId, courseId, isWishlist = false } = req.body;
+
+    if (!userId || !courseId) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing required parameters'
+        });
+    }
+
+    try {
+        const existingEntry = await Cart.findOne({
+            where: { userId, courseId, isWishlist }
+        });
+
+        if (existingEntry) {
+            return res.status(200).json({
+                success: true,
+                message: 'Item already in cart',
+                data: existingEntry
+            });
+        }
+
+        const newEntry = await Cart.create({
+            userId,
+            courseId,
+            isWishlist
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: 'Added to cart successfully',
+            data: newEntry
+        });
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        });
+    }
+};
+
+// Remove from cart
+export const removeFromCart = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const deleted = await Cart.destroy({
+            where: { id }
+        });
+
+        if (deleted) {
+            return res.status(200).json({
+                success: true,
+                message: 'Item removed from cart successfully'
+            });
+        }
+
+        return res.status(404).json({
+            success: false,
+            message: 'Cart item not found'
+        });
+    } catch (error) {
+        console.error('Error removing from cart:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        });
+    }
 };
