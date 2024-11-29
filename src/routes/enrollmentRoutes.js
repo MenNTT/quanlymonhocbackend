@@ -1,16 +1,15 @@
 import express from 'express';
-import * as EnrollmentController from '../controllers/enrollmentController.js';
+import { verifyToken } from '../middleware/auth.js';
+import * as EnrollmentController from '../controllers/EnrollmentController.js';
 
 const router = express.Router();
 
-const initEnrollmentRoute = (app) => {
-    router.get('/enrollment/getAll', EnrollmentController.getAllEnrollments);
-    router.get('/enrollment/get/:id', EnrollmentController.getEnrollment);
-    router.post('/enrollment/create', EnrollmentController.createEnrollment);
-    router.delete('/enrollment/delete/:id', EnrollmentController.deleteEnrollment);
-    router.put('/enrollment/update', EnrollmentController.updateEnrollment);
+const initEnrollmentRoutes = (app) => {
+    router.post('/enroll', verifyToken, EnrollmentController.enrollCourse);
+    router.get('/user', verifyToken, EnrollmentController.getUserEnrollments);
+    // ... other routes
 
-    return app.use('/api/v1/', router);
+    return app.use('/api/v1/enrollment', router);
 };
 
-export default initEnrollmentRoute;
+export default initEnrollmentRoutes;

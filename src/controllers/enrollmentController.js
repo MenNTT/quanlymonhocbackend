@@ -1,80 +1,94 @@
-import Enrollment  from '../models/enrollment.js';
+import Enrollment from '../models/Enrollment.js';
+import Course from '../models/Course.js';
+import Payment from '../models/payment.js';
 
-export const getAllEnrollments = async (req, res) => {
-  try {
-    const enrollments = await Enrollment.findAll();
-    res.status(200).json(enrollments);
-  } catch (error) {
-    console.error('Error fetching enrollments:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
+export const enrollCourse = async (req, res) => {
+    const { accountId, courseId } = req.body;
 
-export const getEnrollment = async (req, res) => {
-  try {
-    const enrollmentId = req.params.id;
-    const enrollment = await Enrollment.findOne({ where: { id: enrollmentId } });
-    if (enrollment) {
-      return res.status(200).json(enrollment);
+    if (!accountId || !courseId) {
+        return res.status(400).json({
+            success: false,
+            message: 'AccountId and CourseId are required'
+        });
     }
-    return res.status(404).json({ message: 'Enrollment not found' });
-  } catch (error) {
-    console.error('Error fetching enrollment:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
 
-export const createEnrollment = async (req, res) => {
-  const { accountId, courseId } = req.body;
-  if (!accountId || !courseId) {
-    return res.status(400).json({ message: 'Missing required parameters' });
-  }
+    try {
+        // Kiểm tra xem đã đăng ký chưa
+        const existingEnrollment = await Enrollment.findOne({
+            where: {
+                accountId,
+                courseId
+            }
+        });
 
-  try {
-    const newEnrollment = await Enrollment.create({ accountId, courseId });
-    res.status(201).json({ message: 'Enrollment created', enrollment: newEnrollment });
-  } catch (error) {
-    console.error('Error creating enrollment:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
+        if (existingEnrollment) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bạn đã đăng ký khóa học này rồi'
+            });
+        }
 
-export const deleteEnrollment = async (req, res) => {
-  const enrollmentId = req.params.id;
-  if (!enrollmentId) {
-    return res.status(400).json({ message: 'Missing required parameters' });
-  }
+        // Lấy thông tin khóa học để lấy giá
+        const course = await Course.findByPk(courseId);
+        if (!course) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy khóa học'
+            });
+        }
 
-  try {
-    const result = await Enrollment.destroy({ where: { id: enrollmentId } });
-    if (result === 0) {
-      return res.status(404).json({ message: 'Enrollment not found' });
+        // Tạo enrollment mới
+        const enrollment = await Enrollment.create({
+            accountId,
+            courseId,
+            enrollmentDate: new Date(),
+            status: 'enrolled'
+        });
+
+        // Tạo payment record
+        await Payment.create({
+            accountId,
+            amount: course.feeAmount,
+            currency: course.currency || 'VND',
+            paymentDate: new Date(),
+            status: 'completed'
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: 'Đăng ký khóa học thành công',
+            data: enrollment
+        });
+    } catch (error) {
+        console.error('Error enrolling course:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Có lỗi xảy ra khi đăng ký khóa học'
+        });
     }
-    return res.status(200).json({ message: 'Enrollment deleted' });
-  } catch (error) {
-    console.error('Error deleting enrollment:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
 };
 
-export const updateEnrollment = async (req, res) => {
-  const { id, accountId, courseId, status, grade } = req.body;
-  if (!id || !accountId || !courseId) {
-    return res.status(400).json({ message: 'Missing required parameters' });
-  }
+export const getUserEnrollments = async (req, res) => {
+    const userId = req.user.id; // Lấy từ token
 
-  try {
-    const [updated] = await Enrollment.update(
-      { accountId, courseId, status, grade },
-      { where: { id } }
-    );
-    if (updated) {
-      const updatedEnrollment = await Enrollment.findOne({ where: { id } });
-      return res.status(200).json({ message: 'Enrollment updated', enrollment: updatedEnrollment });
+    try {
+        const enrollments = await Enrollment.findAll({
+            where: { userId },
+            include: [{
+                model: Course,
+                as: 'Course'
+            }]
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: enrollments
+        });
+    } catch (error) {
+        console.error('Error getting user enrollments:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Có lỗi xảy ra khi lấy danh sách khóa học'
+        });
     }
-    return res.status(404).json({ message: 'Enrollment not found' });
-  } catch (error) {
-    console.error('Error updating enrollment:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
 };
