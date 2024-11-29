@@ -146,7 +146,7 @@ export const clearCart = async (req, res) => {
         await Cart.destroy({
             where: { 
                 userId,
-                isWishlist: false 
+                // isWishlist: false ???
             }
         });
 

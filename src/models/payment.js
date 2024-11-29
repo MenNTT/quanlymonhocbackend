@@ -24,7 +24,7 @@ const Payment = sequelize.define('Payment', {
   },
   currency: {
     type: DataTypes.STRING,
-    defaultValue: 'USD',
+    defaultValue: 'VND',
     comment: 'Currency for payment',
   },
   paymentDate: {
